@@ -12,6 +12,8 @@ import xCloudApi from './helpers/xcloudapi'
 
 import pkg from '../package.json'
 
+import { TokenStore } from 'xal-node'
+
 interface startupFlags {
     fullscreen:boolean;
     autoStream:string;
@@ -20,7 +22,9 @@ interface startupFlags {
 export default class Application {
 
     private _log
-    public _store = new Store()
+    
+    public _store
+    public _path:string
     private _startupFlags: startupFlags = {
         fullscreen: false,
         autoStream: '',
@@ -38,6 +42,7 @@ export default class Application {
     public _authentication:Authentication
 
     constructor(){
+        
         console.log(__filename+'[constructor()] Starting Greenlight v'+pkg.version)
         this._log = Debug('greenlight')
 
@@ -49,8 +54,10 @@ export default class Application {
         ElectronApp.commandLine.appendSwitch('ozone-platform-hint', 'x11')
         ElectronApp.commandLine.appendSwitch('ignore-gpu-blocklist')
         // ElectronApp.commandLine.appendSwitch('enable-zero-copy');
-
-        this.readStartupFlags()
+        
+        this._path=this.readStartupFlags()
+        this._store = new Store({ cwd: this._path })
+        this.loadToken()
         this.loadApplicationDefaults()
 
         // ElectronApp.removeAsDefaultProtocolClient('ms-xal-public-beta-000000004c20a908')
@@ -60,6 +67,13 @@ export default class Application {
 
         this._ipc.startUp()
         this._webUI = new WebUI(this)
+    }
+
+    loadToken(){
+        const tokenStore = new TokenStore()
+        const token= tokenStore.load('./store/'+this._path)
+        console.log('token:', token)
+        
     }
 
     log(namespace = 'application', ...args){
@@ -76,11 +90,13 @@ export default class Application {
 
     readStartupFlags(){
         this.log('application', __filename+'[readStartupFlags()] Program args detected:', process.argv)
+        
 
         for(const arg in process.argv){
             if(process.argv[arg].includes('--fullscreen')){
                 this.log('application', __filename+'[readStartupFlags()] --fullscreen switch found. Setting fullscreen to true')
-                this._startupFlags.fullscreen = true
+                this._startupFlags.fullscreen = true            
+
             }
 
             if(process.argv[arg].includes('--connect=')){
@@ -89,19 +105,35 @@ export default class Application {
                 this.log('application', __filename+'[readStartupFlags()] --connect switch found. Setting autoStream to', key)
                 this._startupFlags.autoStream = key
             }
+
+            if(process.argv[arg].includes('--path=')) {
+                const path = process.argv[arg].substring(7)
+                
+                this.log('application', __filename+'[readStartupFlags()] --path switch found. Setting path to', path)
+                // this._store.set('settings.downloadPath', path)     
+                //this._store = new Store({ cwd:path })
+                return path
+                
+            }
         }
 
         this.log('application', __filename+'[readStartupFlags()] End result of startupFlags:', this._startupFlags)
+       
     }
 
     loadApplicationDefaults(){
         if(this._isProduction === true && this._isCi === false) {
+            
+            ElectronApp.setPath('userData', `${ElectronApp.getPath('userData')} (${this._path              
+            })`)
+            ElectronApp.setPath('sessionData', `${ElectronApp.getPath('userData')}`)
             serve({ directory: 'app' })
 
         } else if(this._isCi === true) {
-            const random = Math.random()*100
-            ElectronApp.setPath('userData', `${ElectronApp.getPath('userData')} (${random})`)
-            ElectronApp.setPath('sessionData', `${ElectronApp.getPath('userData')} (${random})`)
+            //const random = Math.random()*100
+            ElectronApp.setPath('userData', `${ElectronApp.getPath('userData')} (${this._path              
+            })`)
+            ElectronApp.setPath('sessionData', `${ElectronApp.getPath('userData')} (${this._path})`)
             this._store.delete('user')
             this._store.delete('auth')
 
@@ -236,7 +268,7 @@ export default class Application {
         } else {
             const port = process.argv[2] || 3000
             this._mainWindow.loadURL(`http://localhost:${port}/home`)
-            
+            //this._mainWindow.loadURL(`http://www.baidu.com`)
             if(this._isCi !== true){
                 this._mainWindow.webContents.openDevTools()
                 this.openGPUWindow()
