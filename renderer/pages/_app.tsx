@@ -33,6 +33,7 @@ export default function MyApp({ Component, pageProps }) {
     // const [headerLinks, setHeaderLinks] = React.useState([])
     // const [streamingMode, setStreamingMode] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
+    const [consoleId, setConsoleId] = React.useState('test')
 
     React.useEffect(() => {
         Ipc.send('app', 'loadCachedUser').then((user) => {
@@ -43,6 +44,9 @@ export default function MyApp({ Component, pageProps }) {
                 gamerscore: user.gamerscore,
                 level: user.level,
             })
+        })
+        Ipc.send('app', 'getConsoleId').then((consoleId) => {
+            setConsoleId(consoleId)
         })
 
         const authInterval = setInterval(() => {
@@ -125,7 +129,7 @@ export default function MyApp({ Component, pageProps }) {
     return (
         <React.Fragment>
             <Head>
-                <title>Greenlight</title>
+                <title>{consoleId}</title>
             </Head>
       
             <div style={ {

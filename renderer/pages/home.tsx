@@ -11,12 +11,22 @@ import Label from '../components/ui/label'
 import Loader from '../components/ui/loader'
 
 function Home() {
+    const [consoleId, setConsoleId] = React.useState('test')
+    React.useEffect(() => {
+        Ipc.send('app', 'getConsoleId').then((consoleId) => {
+            setConsoleId(consoleId)
+        })
+    })
+
+
+
+
     const consoles = useQuery('consoles', () => Ipc.send('consoles', 'get'), { staleTime: 60*1000 })
   
     return (
         <React.Fragment>
             <Head>
-                <title>Greenlight - My Consoles</title>
+                <title>{consoleId} - My Consoles</title>
             </Head>
 
             <div style={ {

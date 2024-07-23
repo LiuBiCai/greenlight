@@ -18,8 +18,10 @@ interface userData {
   type?: string;
 }
 
+
 function SettingsHome() {
     const [user, setUser] = React.useState<userData>({})
+    const [consoleId, setConsoleId] = React.useState('')
 
     React.useEffect(() => {
         if(Object.keys(user).length === 0){
@@ -28,6 +30,9 @@ function SettingsHome() {
                 setUser(user)
             })
         }
+        Ipc.send('app', 'getConsoleId').then((consoleId) => {
+            setConsoleId(consoleId)
+        })
     })
 
     function logout(){
@@ -39,7 +44,7 @@ function SettingsHome() {
     return (
         <React.Fragment>
             <Head>
-                <title>Greenlight - Settings</title>
+                <title>{consoleId} - Settings</title>
             </Head>
 
             <SettingsSidebar>

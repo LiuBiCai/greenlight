@@ -1,5 +1,6 @@
 import React from 'react'
 import Head from 'next/head'
+import Ipc from '../lib/ipc'
 
 // import { useAchievements } from '../context/userContext'
 
@@ -9,7 +10,7 @@ function Profile() {
     // const loadingAchievements = []
     // const resultsPerPage = 10
 
-    React.useEffect(() => {
+    //React.useEffect(() => {
     // if(achievements.length <= 0){
     //   ipcRenderer.send('xboxweb', {
     //     type: 'get_recent_achievements'
@@ -39,10 +40,10 @@ function Profile() {
         //   }
         // })
 
-        return () => {
+        //return () => {
             // ipcRenderer.removeAllListeners('xboxweb');
-        }
-    }, [])
+        //}
+    //}, [])
 
     // function filterAchievements(achievements){
 
@@ -81,11 +82,17 @@ function Profile() {
 
     //   return buttons
     // }
+    const [consoleId, setConsoleId] = React.useState('test')
+    React.useEffect(() => {
+        Ipc.send('app', 'getConsoleId').then((consoleId) => {
+            setConsoleId(consoleId)
+        })
+    })
 
     return (
         <React.Fragment>
             <Head>
-                <title>Greenlight - My Profile</title>
+                <title>{consoleId} - My Profile</title>
             </Head>
 
             <div style={{ paddingTop: '20px' }}>

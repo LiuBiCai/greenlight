@@ -99,6 +99,12 @@ export default class IpcApp extends IpcBase {
             }
         })
     }
+    
+    getConsoleId(){
+        return new Promise((resolve) => {
+            resolve(this._application._consoleID)
+        })
+    }
 
     onUiShown(){
 

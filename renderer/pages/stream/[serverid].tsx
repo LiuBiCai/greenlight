@@ -18,8 +18,12 @@ function Stream() {
     const [xPlayer, setxPlayer] = React.useState(undefined)
     const [sessionId, setSessionId] = React.useState('')
     const [queueTime, setQueueTime] = React.useState(0)
+    const [consoleId, setConsoleId] = React.useState('test')
 
     React.useEffect(() => {
+        Ipc.send('app', 'getConsoleId').then((consoleId) => {
+            setConsoleId(consoleId)
+        })
         // Detect stream type and title / server id
         let streamType = 'home'
         let serverId = router.query.serverid
@@ -249,7 +253,7 @@ function Stream() {
     return (
         <React.Fragment>
             <Head>
-                <title>Greenlight - Streaming {router.query.serverid}</title>
+                <title>{consoleId} - Streaming {router.query.serverid}</title>
             </Head>
 
             { (xPlayer !== undefined) ? <StreamComponent onDisconnect={ () => {

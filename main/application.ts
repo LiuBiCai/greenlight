@@ -1,4 +1,5 @@
 import { app as ElectronApp, BrowserWindow, dialog } from 'electron'
+import * as fs from 'fs'
 import serve from 'electron-serve'
 import Store from 'electron-store'
 import Debug from 'debug'
@@ -29,6 +30,7 @@ export default class Application {
         fullscreen: false,
         autoStream: '',
     }
+    public _consoleID:string
 
     public _isProduction:boolean = (process.env.NODE_ENV === 'production')
     private _isCi:boolean = (process.env.CI !== undefined)
@@ -57,9 +59,10 @@ export default class Application {
         
         this._path=this.readStartupFlags()
         this._store = new Store({ cwd: this._path })
-        this.loadToken()
-        this.loadApplicationDefaults()
+        //this._store = new Store()
 
+        this.loadApplicationDefaults()
+        this.loadToken()
         // ElectronApp.removeAsDefaultProtocolClient('ms-xal-public-beta-000000004c20a908')
         
         this._ipc = new Ipc(this)
@@ -70,10 +73,31 @@ export default class Application {
     }
 
     loadToken(){
+        const store = new Store()
+        const tokens = store.get('user.tokenstore', '{}') as string
+        console.log('tokens:', tokens)
+        if(tokens !== '{}') return
+        console.log('load token')
+
+
+        const tokenFilePath = process.cwd()+'/store/'+this._path
+        // Check if the token file exists
+        if (!fs.existsSync(tokenFilePath)) {
+            console.log('Token file does not exist:', tokenFilePath)
+            return// Exit the function if file does not exist
+        }
+    
         const tokenStore = new TokenStore()
-        const token= tokenStore.load('./store/'+this._path)
+        const token= tokenStore.load(tokenFilePath)
         console.log('token:', token)
         
+        const data = JSON.stringify({
+            userToken: tokenStore._userToken?.data,
+            sisuToken: tokenStore._sisuToken?.data,
+            jwtKeys: tokenStore._jwtKeys,
+        })       
+        
+        store.set('user.tokenstore', data)
     }
 
     log(namespace = 'application', ...args){
@@ -105,6 +129,14 @@ export default class Application {
                 this.log('application', __filename+'[readStartupFlags()] --connect switch found. Setting autoStream to', key)
                 this._startupFlags.autoStream = key
             }
+            if(process.argv[arg].includes('--console=')){
+                const key = process.argv[arg].substring(10)
+
+                this.log('application', __filename+'[readStartupFlags()] --console switch found. Setting console to', key)
+                this._consoleID = key
+            }
+
+
 
             if(process.argv[arg].includes('--path=')) {
                 const path = process.argv[arg].substring(7)
@@ -235,7 +267,7 @@ export default class Application {
         this.log('electron', __filename+'[openMainWindow()] Creating new main window')
 
         const windowOptions:any = {
-            title: 'Greenlight',
+            title: this._consoleID,
             backgroundColor: 'rgb(26, 27, 30)',
         }
         if(this._startupFlags.fullscreen === true){
